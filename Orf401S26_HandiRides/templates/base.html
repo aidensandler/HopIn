@@ -1,0 +1,102 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Hop In</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet" />
+
+    <!-- App CSS/JS -->
+    <link rel="stylesheet" href="{% static 'main.css' %}" />
+    <script defer src="{% static 'main.js' %}"></script>
+
+    {% block extra_head %}{% endblock %}
+
+    <style>
+      /* Sticky Footer Layout */
+      html, body {
+        height: 100%;
+        margin: 0;
+      }
+
+      .page-wrapper {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+
+      main {
+        flex: 1;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="page-wrapper">
+
+      <!-- Decorative background glow -->
+      <div class="bg-glow" aria-hidden="true"></div>
+
+      <header class="site-header">
+        <div class="container header-inner">
+          <a href="/" class="brand" aria-label="Hop In Home">
+            <img src="{% static 'transparent_logo.png' %}" alt="Hop In" class="brand-logo" />
+          </a>
+
+          <nav class="nav" aria-label="Primary navigation">
+            <a class="nav-link" href="{% url 'rides:index' %}">Find a ride</a>
+            <a class="nav-link" href="{% url 'rides:add_ride' %}">Post a ride</a>
+            <a class="nav-link" href="{% url 'rides:register' %}">Register</a>
+            <a class="nav-link" href="{% url 'rides:redeem' %}">Redeem code</a>
+            <a class="nav-link" href="{% url 'rides:my_rides' %}">My rides</a>
+          </nav>
+
+          <div class="header-actions">
+            {% if request.session.registrant_id %}
+              <span class="pill" style="margin-right:10px;">Registered</span>
+            {% endif %}
+            <button class="btn btn-ghost" type="button" id="themeToggle" aria-label="Toggle theme">🌓</button>
+          </div>
+        </div>
+      </header>
+
+      <main class="container content">
+        {% if messages %}
+          <ul class="messages" aria-label="Messages">
+            {% for message in messages %}
+              <li class="alert {% if 'success' in message.tags %}alert-success{% elif 'warning' in message.tags %}alert-warning{% else %}alert-error{% endif %}">
+                {{ message }}
+              </li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+
+        {% block content %}{% endblock %}
+      </main>
+
+      <footer class="site-footer">
+        <div class="container footer-inner">
+          <div class="footer-left">
+            <img src="{% static 'SRG_logo_transparent.png' %}" alt="Hop In" class="footer-logo" />
+            <div>
+              <div class="footer-title">Hop In</div>
+              <div class="footer-sub">By Aiden Sandler and Emilly Antero.</div>
+            </div>
+          </div>
+          <div class="footer-links">
+            <a href="{% url 'rides:index' %}">Search</a>
+            {% if not request.session.registrant_id %}
+              <a href="{% url 'rides:register' %}">Register</a>
+            {% endif %}
+          </div>
+        </div>
+      </footer>
+
+    </div>
+  </body>
+</html>

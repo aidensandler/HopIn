@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<section class="card card-pad">
+  <div class="grid-2">
+    <div>
+      <h2>Search for ride-sharing partners</h2>
+      <p>Find drivers by city (origination or destination) and/or state. Then request a seat in one click.</p>
+
+      <div style="display:flex; gap:10px; flex-wrap:wrap; margin: 12px 0 0;">
+        <span class="pill">Event-friendly pickup zones</span>
+        <span class="pill">Verified registration</span>
+        <span class="pill">Fast matching</span>
+      </div>
+    </div>
+
+    <div style="display:flex; align-items:center; justify-content:center;">
+      <img src="{% static 'SRG_logo_transparent.png' %}" alt="Hop In" style="max-width: 320px; width: 100%; height: auto; filter: drop-shadow(0 18px 30px rgba(0,0,0,.55));" />
+    </div>
+  </div>
+
+  {# Attach JS validation to the search form #}
+  <hr style="border:0; border-top:1px solid rgba(255,255,255,.10); margin: 18px 0;" />
+
+  <form action="{% url 'rides:index' %}" method="get" onsubmit="return checkForm();">
+    <div class="grid-2" style="align-items:end;">
+      <div class="form-row">
+        {{ form.city.label_tag }}
+        {{ form.city }}
+      </div>
+      <div class="form-row">
+        {{ form.state.label_tag }}
+        {{ form.state }}
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-primary" type="submit">Search</button>
+      <a class="btn" href="{% url 'rides:index' %}">Clear</a>
+      {% if not is_registered %}
+        <a class="btn btn-ghost" href="{% url 'rides:register' %}">Register to request rides</a>
+        <a class="btn" href="{% url 'rides:redeem' %}">Have a conference/marathon code?</a>
+      {% endif %}
+    </div>
+  </form>
+
+  <hr style="border:0; border-top:1px solid rgba(255,255,255,.10); margin: 18px 0;" />
+
+  {# Sort + filters (kept in GET so URLs are shareable) #}
+  <form action="{% url 'rides:index' %}" method="get">
+    <div class="grid-2" style="align-items:end;">
+      <div class="form-row">
+        <label>Sort</label>
+        {{ sort_filter_form.sort }}
+      </div>
+      <div class="form-row">
+        <label>Tier</label>
+        {{ sort_filter_form.service_level }}
+      </div>
+      <div class="form-row">
+        <label>Vehicle</label>
+        {{ sort_filter_form.vehicle_type }}
+      </div>
+      <div class="form-row">
+        <label>Atmosphere</label>
+        <div style="display:flex; gap:12px; flex-wrap:wrap;">
+          {{ sort_filter_form.atmosphere }}
+        </div>
+      </div>
+    </div>
+
+    {# keep the search terms when applying filters #}
+    <input type="hidden" name="city" value="{{ form.city.value|default_if_none:'' }}" />
+    <input type="hidden" name="state" value="{{ form.state.value|default_if_none:'' }}" />
+
+    <div class="form-actions" style="margin-top: 10px;">
+      <button class="btn" type="submit">Apply</button>
+    </div>
+  </form>
+</section>
+
+{% if inputExists %}
+  <section class="card card-pad" style="margin-top: 16px;">
+    {% if people %}
+      <h3>Search results <span class="muted">({{ people.count }} found)</span></h3>
+      <div class="table-wrap" style="margin-top: 12px;">
+        <table>
+          <thead>
+            <tr>
+              <th>Driver</th>
+              <th>From</th>
+              <th>State</th>
+              <th>To</th>
+              <th>State</th>
+              <th>Date</th>
+              <th>Time</th>
+              <th>Vehicle</th>
+              <th>Tier</th>
+              <th>Rating</th>
+              <th>Atmosphere</th>
+              <th>Seats</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for person in people %}
+              <tr>
+                <td>
+                  <strong>{{ person.first_name }}</strong>
+                  {% if person.service_level == 'premium' %}
+                    <span class="pill" style="margin-left:8px;">Premium</span>
+                  {% endif %}
+                  {% if person.seats_available <= 1 %}
+                    <span class="pill" style="margin-left:8px;">Almost full</span>
+                  {% endif %}
+                </td>
+                <td>{{ person.origination }}</td>
+                <td>{{ person.origination_state }}</td>
+                <td>{{ person.destination_city }}</td>
+                <td>{{ person.destination_state }}</td>
+                <td>{{ person.date }}</td>
+                <td>{{ person.time }}</td>
+                <td>{{ person.get_vehicle_type_display }}</td>
+                <td>{{ person.get_service_level_display }}</td>
+                <td>
+                  {% if person.average_rating %}{{ person.average_rating }} ★{% else %}—{% endif %}
+                </td>
+                <td>
+                  {% if person.atmosphere_preferences %}
+                    {% for a in person.atmosphere_list %}
+                      <span class="pill" style="margin:2px 4px 2px 0; display:inline-block;">{{ a|cut:'_'|title }}</span>
+                    {% endfor %}
+                  {% else %}
+                    —
+                  {% endif %}
+                </td>
+                <td>{{ person.seats_available }}</td>
+                <td style="white-space:nowrap;">
+                  <a class="btn" style="padding: 8px 12px;" href="{% url 'rides:ride_detail' person.pk %}">Details</a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <h3>No matches</h3>
+      <p>Try a broader search (e.g., state only) or check back later.</p>
+    {% endif %}
+  </section>
+{% endif %}
+
+<section class="card card-pad" style="margin-top: 16px;">
+  <h3>Post a ride</h3>
+  <p class="muted">Ready to drive? Post your ride so others can request a seat.</p>
+  <a class="btn btn-primary" href="{% url 'rides:add_ride' %}">Go to Post a Ride</a>
+
+  {% if ride_type and event_destination.0 and event_destination.1 %}
+    <p style="margin-top: 12px;">
+      <strong>Your event destination:</strong> {{ event_destination.0 }}, {{ event_destination.1 }}
+      {% if event_name %}<span class="muted">({{ event_name }})</span>{% endif %}
+    </p>
+  {% endif %}
+</section>
+{% endblock %}

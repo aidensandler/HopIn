@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block content %}
+
+<section class="card card-pad" style="max-width: 640px; margin: 0 auto;">
+  <h2>Register</h2>
+  <p class="muted" style="margin-top: -6px;">Once you register, this site will remember you on this device so you can request rides without registering again.</p>
+
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <input type="hidden" name="next" value="{{ next }}" />
+
+    {% if form.non_field_errors %}
+      <div class="alert alert-error">{{ form.non_field_errors }}</div>
+    {% endif %}
+
+    <div class="form-row" style="margin-top: 10px;">
+      {{ form.name.label_tag }}
+      {{ form.name }}
+      {% if form.name.errors %}<div class="muted" style="color:#ffb4b4;">{{ form.name.errors }}</div>{% endif %}
+    </div>
+
+    <div class="form-row">
+      {{ form.phone.label_tag }}
+      {{ form.phone }}
+      {% if form.phone.errors %}<div class="muted" style="color:#ffb4b4;">{{ form.phone.errors }}</div>{% endif %}
+    </div>
+
+    <div class="grid-2" style="gap: 14px;">
+      <div class="form-row">
+        {{ form.city.label_tag }}
+        {{ form.city }}
+        {% if form.city.errors %}<div class="muted" style="color:#ffb4b4;">{{ form.city.errors }}</div>{% endif %}
+      </div>
+
+      <div class="form-row">
+        {{ form.state.label_tag }}
+        {{ form.state }}
+        {% if form.state.errors %}<div class="muted" style="color:#ffb4b4;">{{ form.state.errors }}</div>{% endif %}
+      </div>
+    </div>
+
+    <div class="form-row">
+      {{ form.email.label_tag }}
+      {{ form.email }}
+      {% if form.email.errors %}<div class="muted" style="color:#ffb4b4;">{{ form.email.errors }}</div>{% endif %}
+    </div>
+
+    <div class="form-row">
+      {{ form.profile_pic.label_tag }}
+      {{ form.profile_pic }}
+      {% if form.profile_pic.errors %}<div class="muted" style="color:#ffb4b4;">{{ form.profile_pic.errors }}</div>{% endif %}
+    </div>
+
+    <div class="form-actions" style="margin-top: 14px;">
+      <button type="submit" class="btn btn-primary">Register</button>
+      <a class="btn" href="{% url 'rides:index' %}">Cancel</a>
+    </div>
+  </form>
+</section>
+
+{% endblock %}

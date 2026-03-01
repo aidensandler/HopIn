@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <section class="card card-pad">
+    <h2>Event ride access</h2>
+    <p>
+      Choose <strong>Free ride</strong> to register normally, or choose <strong>Conference</strong> / <strong>Marathon</strong>
+      if you were given a one-time code.
+    </p>
+
+    <form method="post">
+      {% csrf_token %}
+      {{ form.as_p }}
+      <div class="form-actions">
+        <button class="btn btn-primary" type="submit">Continue</button>
+        <a class="btn" href="{% url 'rides:index' %}">Back</a>
+      </div>
+    </form>
+  </section>
+{% endblock %}

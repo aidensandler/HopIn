@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block extra_head %}
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="anonymous" />
+{% endblock %}
+
+{% block content %}
+<section class="card card-pad">
+  <h2>Request a ride with {{ person.first_name }}</h2>
+  <p class="muted">Preview the route, review the driver details, and confirm your request.</p>
+
+  <div class="grid-2" style="margin-top: 14px;">
+    <!-- Left: Map -->
+    <div class="card card-pad" style="box-shadow:none; background: rgba(0,0,0,0.18);">
+      <h3>Your location &amp; route</h3>
+      <p class="muted" style="margin-top:-2px;">(Uses your profile or device location when available.)</p>
+      <div id="route-map" style="border: 1px solid rgba(255,255,255,.12); border-radius: 16px; height: 320px; margin: 10px 0 10px;"></div>
+      <div class="muted" style="font-size: 13px;"><strong>Route:</strong> {{ person.origination }}, {{ person.origination_state }} → {{ person.destination_city }}, {{ person.destination_state }}</div>
+    </div>
+
+    <!-- Right: Driver card -->
+    <div class="card card-pad" style="box-shadow:none; background: rgba(0,0,0,0.18);">
+      <h3>Driver</h3>
+      <div style="display:flex; align-items:center; gap: 14px; margin: 10px 0 12px;">
+        <img
+          src="{% if person.photo %}{% static person.photo %}{% else %}{% static 'waymo.png' %}{% endif %}"
+          alt="{{ person.first_name }}"
+          style="width: 74px; height: 74px; border-radius: 18px; object-fit: cover; border: 1px solid rgba(255,255,255,.14); background: rgba(0,0,0,.2);"
+        />
+        <div>
+          <div style="font-size: 18px; font-weight: 900;">{{ person.first_name }}</div>
+          <div class="muted" style="font-size: 13px;">{% if person.average_rating %}★ {{ person.average_rating }}/5{% else %}★ New{% endif %} · {{ person.seats_available }} seat{{ person.seats_available|pluralize }} available</div>
+        </div>
+      </div>
+
+      <div class="grid-2" style="gap: 12px;">
+        <div>
+          <div class="muted" style="font-size:12px; text-transform:uppercase; letter-spacing:.06em;">Car</div>
+          <div style="font-weight: 800;">{% if person.car_make or person.car_model %}{{ person.car_make }} {{ person.car_model }}{% else %}TBD{% endif %}</div>
+        </div>
+        <div>
+          <div class="muted" style="font-size:12px; text-transform:uppercase; letter-spacing:.06em;">Trip</div>
+          <div style="font-weight: 800;">{{ person.date }} at {{ person.time }}</div>
+        </div>
+      </div>
+
+      <div style="margin-top: 14px; padding: 12px 12px; border-radius: 16px; border: 1px solid rgba(255,255,255,.12); background: rgba(255,255,255,.04);">
+        <div class="muted" style="font-size:12px; text-transform:uppercase; letter-spacing:.06em;">Price</div>
+        <div style="font-size: 22px; font-weight: 950;">
+          {% if person.price %}${{ person.price }} <span class="muted" style="font-size: 14px; font-weight: 700;">/ seat</span>{% else %}<span class="muted">TBD</span>{% endif %}
+        </div>
+      </div>
+
+      <div class="form-actions" style="justify-content: space-between;">
+        <a class="btn" href="{% url 'rides:index' %}">← Back to search</a>
+        <form action="{% url 'rides:confirm_request' person.pk %}" method="post">
+          {% csrf_token %}
+          <button class="btn btn-primary" type="submit">Confirm request</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="anonymous"></script>
+<script>
+(function() {
+  var originStr = "{{ person.origination }}, {{ person.origination_state }}, USA";
+  var destStr = "{{ person.destination_city }}, {{ person.destination_state }}, USA";
+
+  function geocode(q) {
+    return fetch("https://nominatim.openstreetmap.org/search?format=json&q=" + encodeURIComponent(q) + "&limit=1", {
+      headers: { "Accept": "application/json", "User-Agent": "HandiRides/1.0 (ORF401)" }
+    }).then(function(r) { return r.json(); }).then(function(arr) {
+      return arr && arr[0] ? [parseFloat(arr[0].lat), parseFloat(arr[0].lon)] : null;
+    });
+  }
+
+  function initMap(originLatLng, destLatLng) {
+    var map = L.map("route-map").setView(originLatLng, 8);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: "&copy; <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a>"
+    }).addTo(map);
+    L.marker(originLatLng).addTo(map).bindPopup("Start: {{ person.origination }}, {{ person.origination_state }}");
+    L.marker(destLatLng).addTo(map).bindPopup("End: {{ person.destination_city }}, {{ person.destination_state }}");
+    var bounds = L.latLngBounds(originLatLng, destLatLng);
+    map.fitBounds(bounds, { padding: [30, 30] });
+    L.polyline([originLatLng, destLatLng], { color: "#4a90d9", weight: 4 }).addTo(map);
+  }
+
+  function showError() {
+    document.getElementById("route-map").innerHTML = "<div style=\"display:flex;align-items:center;justify-content:center;height:100%;color:#666;\">Map unavailable (geocoding failed)</div>";
+  }
+
+  geocode(originStr).then(function(origin) {
+    if (!origin) return showError();
+    setTimeout(function() {
+      geocode(destStr).then(function(dest) {
+        if (!dest) return showError();
+        initMap(origin, dest);
+      });
+    }, 1100);
+  }).catch(showError);
+})();
+</script>
+{% endblock %}

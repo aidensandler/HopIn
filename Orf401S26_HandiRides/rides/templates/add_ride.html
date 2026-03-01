@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="card card-pad">
+  <div class="page-title">
+    <h2>Post a new ride</h2>
+    <p class="muted">Add your ride to the public list so others can find and request it.</p>
+
+    {% if ride_type and event_destination.0 and event_destination.1 %}
+      <div class="alert alert-success" style="margin-top:12px;">
+        <strong>Event destination detected:</strong> {{ event_destination.0 }}, {{ event_destination.1 }}
+        {% if event_name %}<span class="muted">({{ event_name }})</span>{% endif %}
+        <div class="muted" style="margin-top:4px;">We pre-filled your destination to save time.</div>
+      </div>
+    {% endif %}
+  </div>
+
+  <form action="{% url 'rides:create' %}" method="post" class="stack" id="addRideForm">
+    {% csrf_token %}
+    {{ new_ride_form }}
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">Submit ride</button>
+      <a class="btn" href="{% url 'rides:index' %}">Back to search</a>
+    </div>
+  </form>
+
+  <div class="muted" style="margin-top:12px;">
+    Tip: Premium CartyCity rides will be highlighted in search results.
+  </div>
+</section>
+{% endblock %}

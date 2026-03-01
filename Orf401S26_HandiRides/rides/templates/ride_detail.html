@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="card card-pad">
+  <div style="display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+    <div>
+      <h2 style="margin:0;">Ride details</h2>
+      <p class="muted" style="margin:6px 0 0;">
+        {{ ride.origination }}, {{ ride.origination_state }} → {{ ride.destination_city }}, {{ ride.destination_state }}
+      </p>
+
+      <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top: 10px;">
+        {% if ride.service_level == 'premium' %}<span class="pill">Premium</span>{% else %}<span class="pill">Regular</span>{% endif %}
+        <span class="pill">{{ ride.get_vehicle_type_display }}</span>
+        <span class="pill">{{ ride.date }} @ {{ ride.time }}</span>
+        <span class="pill">Seats: {{ ride.seats_available }}</span>
+        {% if ride.price %}<span class="pill">${{ ride.price }} / seat</span>{% endif %}
+      </div>
+    </div>
+
+    <div style="min-width: 240px;">
+      <div class="muted" style="margin-bottom:6px;">Map preview</div>
+      <a class="btn" href="{{ map_url }}" target="_blank" rel="noopener">Open in Google Maps</a>
+    </div>
+  </div>
+
+  <hr style="border:0; border-top:1px solid rgba(255,255,255,.10); margin: 16px 0;" />
+
+  <div class="grid-2" style="align-items:start;">
+    <div>
+      <h3 style="margin-top:0;">Driver</h3>
+      <p style="margin: 0;">
+        <strong>{{ ride.first_name }}{% if ride.last_name %} {{ ride.last_name }}{% endif %}</strong>
+        {% if ride.average_rating %}<span class="muted"> · {{ ride.average_rating }} ★</span>{% else %}<span class="muted"> · New</span>{% endif %}
+      </p>
+      {% if ride.email %}<p class="muted" style="margin: 6px 0 0;">{{ ride.email }}</p>{% endif %}
+
+      {% if ride.atmosphere_list %}
+        <p style="margin: 12px 0 6px;"><strong>Atmosphere</strong></p>
+        <div>
+          {% for a in ride.atmosphere_list %}
+            <span class="pill" style="margin:2px 4px 2px 0; display:inline-block;">{{ a|cut:'_'|title }}</span>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <div style="margin-top: 14px; display:flex; gap:10px; flex-wrap:wrap;">
+        {% if is_registered %}
+          <a class="btn btn-primary" href="{% url 'rides:request_ride' ride.pk %}">Request this ride</a>
+        {% else %}
+          <a class="btn btn-primary" href="{% url 'rides:register' %}?next={% url 'rides:ride_detail' ride.pk %}">Register to request</a>
+        {% endif %}
+        <a class="btn" href="{% url 'rides:index' %}">Back to search</a>
+      </div>
+    </div>
+
+    <div>
+      <h3 style="margin-top:0;">Reviews</h3>
+
+      {% if reviews %}
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          {% for r in reviews %}
+            <div class="card" style="padding: 12px;">
+              <div><strong>{{ r.rating }} ★</strong> <span class="muted"> · {{ r.created_at }}</span></div>
+              {% if r.comment %}<div style="margin-top:6px;">{{ r.comment }}</div>{% endif %}
+            </div>
+          {% endfor %}
+        </div>
+      {% else %}
+        <p class="muted">No reviews yet.</p>
+      {% endif %}
+
+      <hr style="border:0; border-top:1px solid rgba(255,255,255,.10); margin: 16px 0;" />
+
+      <h4 style="margin:0 0 8px;">Leave a review</h4>
+      {% if can_review %}
+        <form method="post" action="{% url 'rides:submit_review' ride.pk %}">
+          {% csrf_token %}
+          {{ review_form }}
+          <button class="btn btn-primary" type="submit" style="margin-top: 10px;">Submit review</button>
+        </form>
+      {% else %}
+        <p class="muted">You can leave a review after your ride request is accepted.</p>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}

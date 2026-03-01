@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="card card-pad">
+  <h2 style="margin-top:0;">My rides</h2>
+
+  {% if not email %}
+    <p class="muted">To manage rides, register with the same email you used when posting rides.</p>
+    <a class="btn btn-primary" href="{% url 'rides:register' %}">Register</a>
+  {% else %}
+    <p class="muted">Managing rides posted with <strong>{{ email }}</strong>.</p>
+
+    <h3>Posted rides</h3>
+    {% if rides %}
+      <div class="table-wrap" style="margin-top: 10px;">
+        <table>
+          <thead>
+            <tr>
+              <th>Route</th>
+              <th>Date</th>
+              <th>Seats</th>
+              <th>Tier</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in rides %}
+              <tr>
+                <td>
+                  <a href="{% url 'rides:ride_detail' r.pk %}"><strong>{{ r.origination }}, {{ r.origination_state }} → {{ r.destination_city }}, {{ r.destination_state }}</strong></a>
+                </td>
+                <td>{{ r.date }} {{ r.time }}</td>
+                <td>{{ r.seats_available }}</td>
+                <td>{% if r.service_level == 'premium' %}<span class="pill">Premium</span>{% else %}<span class="pill">Regular</span>{% endif %}</td>
+                <td style="white-space:nowrap;">
+                  <form method="post" action="{% url 'rides:cancel_ride' r.pk %}" style="display:inline;">
+                    {% csrf_token %}
+                    <button class="btn" type="submit">Delete</button>
+                  </form>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="muted">No rides found for this email.</p>
+      <a class="btn" href="{% url 'rides:add_ride' %}">Post a ride</a>
+    {% endif %}
+
+    <hr style="border:0; border-top:1px solid rgba(255,255,255,.10); margin: 18px 0;" />
+
+    <h3>Ride requests</h3>
+    {% if requests %}
+      <div class="table-wrap" style="margin-top: 10px;">
+        <table>
+          <thead>
+            <tr>
+              <th>Ride</th>
+              <th>Requester</th>
+              <th>Status</th>
+              <th>When</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for rr in requests %}
+              <tr>
+                <td><a href="{% url 'rides:ride_detail' rr.driver.pk %}">{{ rr.driver.origination }} → {{ rr.driver.destination_city }}</a></td>
+                <td>{{ rr.registrant.name }}</td>
+                <td>
+                  {% if rr.status == 'accepted' %}<span class="pill">Accepted</span>
+                  {% elif rr.status == 'declined' %}<span class="pill">Declined</span>
+                  {% else %}<span class="pill">Pending</span>
+                  {% endif %}
+                </td>
+                <td class="muted">{{ rr.created_at }}</td>
+                <td style="white-space:nowrap;">
+                  {% if rr.status == 'pending' %}
+                    <form method="post" action="{% url 'rides:driver_request_action' rr.pk 'accept' %}" style="display:inline;">
+                      {% csrf_token %}
+                      <button class="btn btn-primary" type="submit">Accept</button>
+                    </form>
+                    <form method="post" action="{% url 'rides:driver_request_action' rr.pk 'decline' %}" style="display:inline;">
+                      {% csrf_token %}
+                      <button class="btn" type="submit">Decline</button>
+                    </form>
+                  {% else %}
+                    —
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="muted">No requests yet.</p>
+    {% endif %}
+
+  {% endif %}
+</section>
+{% endblock %}
